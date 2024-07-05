@@ -1,0 +1,62 @@
+trading_patterns/
+│
+├── app.py
+├── static/
+│   ├── css/
+│   │   └── styles.css
+│   ├── js/
+│   │   └── scripts.js
+├── templates/
+│   └── index.html
+from flask import Flask, render_template, request, send_file
+import matplotlib.pyplot as plt
+import numpy as np
+import io
+
+app = Flask(__name__)
+
+def head_and_shoulders_cup():
+    x = np.linspace(-3, 3, 400)
+    y = []
+    for xi in x:
+        if xi < -1.5:
+            y.append(-0.5 * xi - 1)
+        elif -1.5 <= xi < -0.5:
+            y.append(0.5 * xi + 0.25)
+        elif -0.5 <= xi < 0.5:
+            y.append(-xi ** 2 + 1)
+        elif 0.5 <= xi < 1.5:
+            y.append(0.5 * xi + 0.25)
+        else:
+            y.append(-0.5 * xi + 1)
+    return x, np.array(y)
+
+def flag_pattern():
+    x = np.linspace(-2, 2, 400)
+    y = np.sin(3 * np.pi * x) * np.exp(-x**2)
+    return x, y
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/plot/<pattern>')
+def plot(pattern):
+    plt.figure()
+    if pattern == 'head_and_shoulders':
+        x, y = head_and_shoulders_cup()
+    elif pattern == 'flag':
+        x, y = flag_pattern()
+    plt.plot(x, y)
+    plt.title(f'{pattern.replace("_", " ").title()} Pattern')
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+    plt.grid(True)
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
+
+if __name__ == '__main__':
+    app.run(debug=True)
